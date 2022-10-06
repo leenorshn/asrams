@@ -23,7 +23,7 @@ export default function Example() {
     useEffect(() => {
 
         if (currentUser) {
-            router.replace("/panier")
+            router.replace("/")
         }
     }, []);
 
