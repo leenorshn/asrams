@@ -20,10 +20,10 @@ const AppBar = () => {
                 <input className='w-96 rounded-full' type="text" placeholder='Rechercher produit' />
             </div>
             <div className='flex space-x-5 items-center'>
-                <div className='relative'>
+                <div className='relative cursor-pointer'>
                     {
                         currentUser ? (<Link href={"/panier"}>
-                            <ShoppingCartIcon className='w-6 h-6 text-white' />
+                            <ShoppingCartIcon className='w-6 h-6 cursor-pointer text-white' />
                         </Link>) : (
                             <Link href={"/login"}>
                                 <ShoppingCartIcon className='w-6 h-6 text-white' />
@@ -46,7 +46,7 @@ const AppBar = () => {
                             className='text-orange-600 font-medium  bg-white rounded-full py-1 px-5'>logout</button>
                     </div>
                 </div> : (<Link href={"/login"}>
-                    <button className='text-orange-600 font-medium  bg-white rounded-full py-1 px-5'>s'inscrir</button>
+                    <button className='text-orange-600 font-medium  bg-white rounded-full py-1 px-5'>{`s'inscrir`}</button>
 
                 </Link>)}
             </div>

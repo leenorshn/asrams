@@ -1,6 +1,5 @@
 
-import { Disclosure } from '@headlessui/react'
-import { LockClosedIcon } from '@heroicons/react/20/solid'
+
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import { useBasket } from '../utils/PanierContext'
@@ -10,29 +9,73 @@ import { useBasket } from '../utils/PanierContext'
 
 import CreditCardInput from 'react-credit-card-input';
 import { useAuth } from '../utils/AuthContext'
-import { async } from '@firebase/util'
-import { addDoc, collection, Timestamp } from 'firebase/firestore'
+import { addDoc, collection, doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../utils/firebase'
 export default function Example() {
     const [loading, setLoading] = useState(false)
-    const { panier, deleteProduct, totalPanier } = useBasket()
-    const [card, setCard] = useState({ num: "", exp: "", csv: "" })
+    const { panier, deleteProduct, totalPanier, setPanier } = useBasket()
+    const [card, setCard] = useState({ num: "", exp: "", csv: "", address: "" })
+
     const { currentUser } = useAuth()
 
     const commandPanier = async () => {
+        setLoading(true);
+
+
         try {
-            setLoading(true);
-            const docRef = await addDoc(collection(db, "products"), {
-                card: card,
+
+            const docRef = await addDoc(collection(db, "commandes"), {
+                address: card.address || "Non defini",
+                montant: totalPanier() || 0,
                 panier: panier,
-                montant: totalPanier(),
+                name: currentUser.displayName || "Inconnue",
+                uid: currentUser.uid || "uid_inconnue",
+                email: currentUser.email,
+                avatar: currentUser.photoURL,
                 isPayed: true,
-                client: currentUser,
+
                 date: Timestamp.now(),
             });
 
+            console.log(docRef);
+
+
+            console.log(currentUser.uid);
+
+            const docRefo = doc(db, "clients", `${currentUser.uid}`);
+            const docSnap = await getDoc(docRefo);
+            console.log("*******M******");
+
+            console.log(docSnap.exists());
+
+
+            if (docSnap.exists() == false) {
+                await setDoc(doc(db, "clients", currentUser.uid), {
+                    name: currentUser.displayName || "Inconnue",
+                    uid: currentUser.uid || "uid_inconnue",
+                    email: currentUser.email || "",
+                    avatar: currentUser.photoURL || "",
+                    date: Timestamp.now(),
+                });
+                console.log("*******D******");
+            }
+
+
+
+
+            for (var i = 0; i < panier.length; i++) {
+
+                const productRef = doc(db, "products", panier[i].product.id);
+
+                // update product quantity
+                await updateDoc(productRef, {
+                    stock: panier[i].product.quantity - panier[i].count
+                });
+            }
+
             setLoading(false);
-            setCard({ csv: "", exp: "", num: "" })
+            setCard({ csv: "", exp: "", num: "", address: "" })
+            setPanier([])
         } catch (error) {
             setLoading(false);
         }
@@ -40,14 +83,7 @@ export default function Example() {
 
     return (
         <>
-            {/*
-        This example requires updating your template:
 
-        ```
-        <html class="h-full bg-white">
-        <body class="h-full">
-        ```
-      */}
             <main className="lg:flex lg:min-h-full lg:flex-row-reverse lg:overflow-hidden">
                 <h1 className="sr-only">Checkout</h1>
 
@@ -120,7 +156,7 @@ export default function Example() {
                         </div>
 
 
-                        <form className="mt-6">
+                        <form className="mt-6" >
 
                             <CreditCardInput
                                 style={{ "all": "initial" }}
@@ -158,6 +194,8 @@ export default function Example() {
                                             type="text"
                                             id="address"
                                             name="address"
+                                            value={card.address}
+                                            onChange={(e) => setCard({ ...card, address: e.target.value })}
                                             placeholder="Entrer l'adresse de livraison"
                                             autoComplete="street-address"
                                             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -168,27 +206,23 @@ export default function Example() {
 
                             </div>
 
-                            <div className="mt-6 flex space-x-2">
-                                <div className="flex h-5 items-center">
-                                    <input
-                                        id="same-as-shipping"
-                                        name="same-as-shipping"
-                                        type="checkbox"
-                                        defaultChecked
-                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                </div>
-                                <label htmlFor="same-as-shipping" className="text-sm font-medium text-gray-900">
-                                    Adresse de livraison
-                                </label>
-                            </div>
+                            {/* {loading ? <>encours ...</> : ( */}
 
                             <button
                                 type="submit"
-                                className="mt-6 w-full rounded-md border border-transparent bg-orange-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                                onClick={
+                                    async (e) => {
+                                        console.log(">>>>>");
+
+                                        e.preventDefault();
+                                        await commandPanier();
+                                    }
+                                }
+                                className="mt-6  w-full rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm  focus:outline-none"
                             >
                                 Payer {totalPanier()}$
                             </button>
+                            {/* )} */}
 
 
                         </form>
