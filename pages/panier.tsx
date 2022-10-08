@@ -11,12 +11,14 @@ import CreditCardInput from 'react-credit-card-input';
 import { useAuth } from '../utils/AuthContext'
 import { addDoc, collection, doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../utils/firebase'
+import Notification from '../components/Notification';
 export default function Example() {
     const [loading, setLoading] = useState(false)
     const { panier, deleteProduct, totalPanier, setPanier } = useBasket()
     const [card, setCard] = useState({ num: "", exp: "", csv: "", address: "" })
 
     const { currentUser } = useAuth()
+    const [show, setShow] = useState(false)
 
     const commandPanier = async () => {
         setLoading(true);
@@ -55,6 +57,7 @@ export default function Example() {
                     uid: currentUser.uid || "uid_inconnue",
                     email: currentUser.email || "",
                     avatar: currentUser.photoURL || "",
+                    address: card.address,
                     date: Timestamp.now(),
                 });
                 console.log("*******D******");
@@ -76,6 +79,7 @@ export default function Example() {
             setLoading(false);
             setCard({ csv: "", exp: "", num: "", address: "" })
             setPanier([])
+            setShow(true)
         } catch (error) {
             setLoading(false);
         }
@@ -83,7 +87,7 @@ export default function Example() {
 
     return (
         <>
-
+            <Notification setShow={setShow} show={show} />
             <main className="lg:flex lg:min-h-full lg:flex-row-reverse lg:overflow-hidden">
                 <h1 className="sr-only">Checkout</h1>
 
@@ -210,15 +214,18 @@ export default function Example() {
 
                             <button
                                 type="submit"
+                                disabled={card.num.length < 5 && card.address.length < 3}
                                 onClick={
                                     async (e) => {
                                         console.log(">>>>>");
 
                                         e.preventDefault();
-                                        await commandPanier();
+                                        if (card.num.length > 5 && card.address.length > 3) {
+                                            await commandPanier();
+                                        }
                                     }
                                 }
-                                className="mt-6  w-full rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm  focus:outline-none"
+                                className="mt-6  w-full disabled:bg-slate-400 disabled:text-black rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm  focus:outline-none"
                             >
                                 Payer {totalPanier()}$
                             </button>
